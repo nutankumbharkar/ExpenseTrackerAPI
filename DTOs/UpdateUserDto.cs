@@ -2,13 +2,12 @@
 
 namespace ExpenseTrackerAPI.DTOs
 {
-    public class RegisterDto
+    public class UpdateUserDto
     {
         [Required(ErrorMessage = "Username is required")]
         public string Username { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Password is required")]
         [MinLength(4, ErrorMessage = "Password must be at least 4 characters")]
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; }
     }
 }

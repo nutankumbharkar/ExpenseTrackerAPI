@@ -160,3 +160,4 @@ C:\Users\User\OneDrive\Desktop\API_Practice\ExpenseTrackerAPI\obj\Debug\net10.0\
 C:\Users\User\OneDrive\Desktop\API_Practice\ExpenseTrackerAPI\obj\Debug\net10.0\ExpenseTrackerAPI.pdb
 C:\Users\User\OneDrive\Desktop\API_Practice\ExpenseTrackerAPI\obj\Debug\net10.0\ExpenseTrackerAPI.genruntimeconfig.cache
 C:\Users\User\OneDrive\Desktop\API_Practice\ExpenseTrackerAPI\obj\Debug\net10.0\ref\ExpenseTrackerAPI.dll
+C:\Users\User\OneDrive\Desktop\API_Practice\ExpenseTrackerAPI\obj\Debug\net10.0\ExpenseTrackerAPI.sourcelink.json

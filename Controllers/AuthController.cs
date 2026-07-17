@@ -1,75 +1,72 @@
 using Microsoft.AspNetCore.Mvc;
 using ExpenseTrackerAPI.Data;
+using ExpenseTrackerAPI.DTOs;
 using ExpenseTrackerAPI.Models;
-using ExpenseTrackerAPI.Services; 
-using ExpenseTrackerAPI.DTOs;     
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+namespace ExpenseTrackerAPI.Controllers
 {
-    private readonly AppDbContext _context;
-    private readonly JwtHelper _jwt;
-
-    public AuthController(AppDbContext context, JwtHelper jwt)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
     {
-        _context = context;
-        _jwt = jwt;
-    }
+        private readonly AppDbContext _context;
+        private readonly IConfiguration _config;
 
-    // ✅ REGISTER
-    [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterDto dto)
-    {
-        // 🔴 NULL CHECK
-        if (dto == null || string.IsNullOrEmpty(dto.Username) || string.IsNullOrEmpty(dto.Password))
+        public AuthController(AppDbContext context, IConfiguration config)
         {
-            return BadRequest("Username and Password are required");
+            _context = context;
+            _config = config;
         }
 
-        // 🔴 USER ALREADY EXISTS CHECK
-        var existingUser = _context.Users.FirstOrDefault(x => x.Username == dto.Username);
-        if (existingUser != null)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(RegisterDto dto)
         {
-            return BadRequest("User already exists");
+            var hash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+            var user = new User
+            {
+                Username = dto.Username,
+                PasswordHash = hash
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok("Registered");
         }
 
-        // 🔐 HASH PASSWORD
-        var hash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-        var user = new User
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(RegisterDto dto)
         {
-            Username = dto.Username,
-            PasswordHash = hash
-        };
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == dto.Username);
 
-        _context.Users.Add(user);
-        _context.SaveChanges();
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+                return Unauthorized("Invalid credentials");
 
-        return Ok("Registered Successfully");
-    }
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+            };
 
-    // ✅ LOGIN
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginDto dto)
-    {
-        // 🔴 NULL CHECK
-        if (dto == null || string.IsNullOrEmpty(dto.Username) || string.IsNullOrEmpty(dto.Password))
-        {
-            return BadRequest("Invalid input");
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"])
+            );
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.Now.AddHours(1),
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+            );
+
+            return Ok(new
+            {
+                token = new JwtSecurityTokenHandler().WriteToken(token)
+            });
         }
-
-        var user = _context.Users.FirstOrDefault(x => x.Username == dto.Username);
-
-        if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-        {
-            return Unauthorized("Invalid username or password");
-        }
-
-        // 🔐 GENERATE JWT
-        var token = _jwt.GenerateToken(user.Id);
-
-        return Ok(new { token });
     }
 }

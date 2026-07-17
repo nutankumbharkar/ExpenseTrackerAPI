@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<JwtHelper>();
 builder.Services.AddScoped<IExpenseService, ExpenseService>();
 
@@ -99,6 +100,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<ExpenseTrackerAPI.Middleware.ExceptionMiddleware>();
 
 // ✅ Swagger (development me hi enable rakhna best practice hai)
 if (app.Environment.IsDevelopment())
